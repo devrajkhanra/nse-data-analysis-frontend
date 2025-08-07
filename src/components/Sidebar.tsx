@@ -76,7 +76,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sectors, selectedSector, onSelectSect
                         </ul>
                     </div>
                 </div>
-            </h1>
+            </nav>
             
             <div className="p-4 border-t border-slate-700">
                 <div className="text-xs text-slate-400 text-center">
