@@ -283,6 +283,9 @@
 
 
 import React, { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, Calendar, Target, Info, TrendingUp, TrendingDown } from 'lucide-react';
+import LoadingSpinner from './LoadingSpinner';
+import OptionMetrics from './OptionMetrics';
 import type {
     OptionChainWithDeltas,
     OptionChainLegWithDeltas,
@@ -468,40 +471,55 @@ const OptionChain: React.FC<OptionChainProps> = ({ symbol }) => {
     };
 
     return (
-        <section className="p-4 bg-white rounded-lg shadow max-w-7xl mx-auto select-none">
-            <h2 className="text-2xl font-extrabold mb-3">
-                Option Chain: {symbol} - Expiry:{" "}
-                {expiries[selectedExpiryIndex] ?? "N/A"}
-            </h2>
+        <section className="p-6 bg-gray-50 min-h-screen">
+            <div className="max-w-7xl mx-auto">
+                {/* Header Section */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 className="text-3xl font-bold text-gray-900 flex items-center">
+                                <Target className="w-8 h-8 mr-3 text-blue-600" />
+                                Option Chain Analysis
+                            </h2>
+                            <p className="text-gray-600 mt-1">
+                                {symbol} • Expiry: {expiries[selectedExpiryIndex] ?? "N/A"}
+                            </p>
+                        </div>
+                        <div className="flex items-center space-x-2 text-sm text-gray-500">
+                            <Info className="w-4 h-4" />
+                            <span>Real-time option chain data</span>
+                        </div>
+                    </div>
 
-            {/* Expiry selector */}
-            <div className="flex flex-wrap items-center gap-6 mb-4">
-                <label htmlFor="expirySelect" className="font-semibold text-gray-700">
-                    Expiry:
-                </label>
-                <select
-                    id="expirySelect"
-                    className="border rounded p-2"
-                    value={expiries[selectedExpiryIndex] || ""}
-                    onChange={(e) => {
-                        const idx = expiries.indexOf(e.target.value);
-                        if (idx >= 0) {
-                            setSelectedExpiryIndex(idx);
-                            setSelectedDateIndex(0);
-                        }
-                    }}
-                    aria-label="Select expiry date"
-                >
-                    {expiries.map((exp) => (
-                        <option key={exp} value={exp}>
-                            {exp}
-                        </option>
-                    ))}
-                </select>
-            </div>
+                    {/* Controls Row */}
+                    <div className="flex flex-wrap items-center gap-6">
+                        <div className="flex items-center space-x-3">
+                            <label htmlFor="expirySelect" className="text-sm font-medium text-gray-700">
+                                Expiry Date:
+                            </label>
+                            <select
+                                id="expirySelect"
+                                className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                value={expiries[selectedExpiryIndex] || ""}
+                                onChange={(e) => {
+                                    const idx = expiries.indexOf(e.target.value);
+                                    if (idx >= 0) {
+                                        setSelectedExpiryIndex(idx);
+                                        setSelectedDateIndex(0);
+                                    }
+                                }}
+                            >
+                                {expiries.map((exp) => (
+                                    <option key={exp} value={exp}>
+                                        {exp}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                </div>
 
-            {/* Date range picker */}
-            <div className="mb-4">
+                {/* Date Range Picker */}
                 <DateRangePicker
                     dates={availableDates}
                     dateFrom={dateFrom}
@@ -509,201 +527,249 @@ const OptionChain: React.FC<OptionChainProps> = ({ symbol }) => {
                     setDateFrom={setDateFrom}
                     setDateTo={setDateTo}
                 />
-            </div>
 
-            {/* Day navigation */}
-            <div className="flex items-center gap-4 mb-5 text-gray-700 font-semibold">
-                <button
-                    onClick={prevDay}
-                    disabled={selectedDateIndex === 0 || loading}
-                    aria-label="Previous trading day"
-                    className="px-3 py-1 rounded hover:bg-gray-200 disabled:opacity-50"
-                    type="button"
-                >
-                    ← Prev Day
-                </button>
-                <div>
-                    Trading Day:{" "}
-                    <span className="font-bold">
-                        {selectedDate}{" "}
-                        {previousDate && (
-                            <small className="text-sm text-gray-400">(Compared to {previousDate})</small>
-                        )}
-                    </span>
-                </div>
-                <button
-                    onClick={nextDay}
-                    disabled={
-                        selectedDateIndex >= filteredDates.length - 1 || filteredDates.length === 0 || loading
-                    }
-                    aria-label="Next trading day"
-                    className="px-3 py-1 rounded hover:bg-gray-200 disabled:opacity-50"
-                    type="button"
-                >
-                    Next Day →
-                </button>
-            </div>
-
-            {/* Loading and error states */}
-            {loading && (
-                <p className="text-center italic text-gray-700 text-lg my-8">Loading option chain...</p>
-            )}
-            {error && (
-                <p className="text-center text-red-600 font-semibold my-8">{error}</p>
-            )}
-
-            {optionChain && !loading && !error && (
-                <div className="overflow-x-auto rounded shadow border bg-white">
-                    <table className="w-full min-w-[900px] border-collapse text-sm text-right">
-                        <thead>
-                            <tr className="bg-gray-200 sticky top-0 text-gray-900 font-semibold select-none">
-                                {/* PE side */}
-                                <th className="p-2 border-l-0 border border-gray-300 rounded-l">
-                                    OI (PE)
-                                </th>
-                                <th className="p-2 border border-gray-300">ΔOI (PE)</th>
-                                <th className="p-2 border border-gray-300">Premium (PE)</th>
-
-                                {/* Strike centered */}
-                                <th className="p-2 border border-gray-300 bg-yellow-100 font-bold text-lg text-center sticky left-0 shadow-md z-10">
-                                    Strike
-                                </th>
-
-                                {/* CE side */}
-                                <th className="p-2 border border-gray-300">Premium (CE)</th>
-                                <th className="p-2 border border-gray-300">ΔOI (CE)</th>
-                                <th className="p-2 border-r-0 border border-gray-300 rounded-r">
-                                    OI (CE)
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {optionChain.strikes.map((leg: OptionChainLegWithDeltas) => {
-                                // Determine ATM, ITM, OTM for CE and PE (or just CE)
-                                const atm = atmStrike ?? 0;
-
-                                // Assign moneyness for CE and PE separately 
-                                const ceMoneyness = leg.CE ? getOptionMoneyness(leg.strPrice, atm, "CE") : null;
-                                const peMoneyness = leg.PE ? getOptionMoneyness(leg.strPrice, atm, "PE") : null;
-
-                                // Get background color classes
-                                const ceBg = ceMoneyness ? moneynessBg[ceMoneyness] : "";
-                                const peBg = peMoneyness ? moneynessBg[peMoneyness] : "";
-
-                                // OI delta bars width and color
-                                const ceDeltaOI = leg.CE?.deltaOI ?? 0;
-                                const peDeltaOI = leg.PE?.deltaOI ?? 0;
-
-                                const maxDelta = maxOiDelta || 1;
-
-                                const ceBarWidth = oiChangeBarWidth(ceDeltaOI, maxDelta);
-                                const peBarWidth = oiChangeBarWidth(peDeltaOI, maxDelta);
-
-                                const ceBarColor = oiChangeColor(ceDeltaOI);
-                                const peBarColor = oiChangeColor(peDeltaOI);
-
-                                // Label buildup/unwinding text
-                                const ceLabel = ceDeltaOI > 0 ? "Buildup" : ceDeltaOI < 0 ? "Unwinding" : "";
-                                const peLabel = peDeltaOI > 0 ? "Buildup" : peDeltaOI < 0 ? "Unwinding" : "";
-
-                                return (
-                                    <tr
-                                        key={leg.strPrice}
-                                        className="group hover:bg-gray-50 cursor-default"
-                                        tabIndex={0}
-                                    >
-                                        {/* PE side */}
-                                        <td
-                                            className={`p-1 border text-right font-mono ${peBg} relative`}
-                                            aria-label={`Put Option Open Interest: ${leg.PE?.openInt ?? "-"}`}
-                                        >
-                                            {(leg.PE?.openInt ?? "-").toLocaleString()}
-                                        </td>
-                                        <td className={`p-1 border font-mono relative`}>
-                                            <div
-                                                className={`absolute inset-y-0 left-0 rounded-r ${peBarColor}`}
-                                                style={{ width: `${peBarWidth}px` }}
-                                                aria-hidden="true"
-                                            />
-                                            <span className="relative z-10 text-right block select-none pl-1">
-                                                {peDeltaOI !== 0 ? peDeltaOI : "-"}
-                                            </span>
-                                            <div className="absolute right-1 top-0 text-xs font-semibold select-none text-red-700">
-                                                {peLabel}
-                                            </div>
-                                        </td>
-                                        <td
-                                            className={`p-1 border font-mono text-right ${peBg}`}
-                                            aria-label={`Put Option Premium: ${leg.PE?.closePrice?.toFixed(2) ?? "-"}`}
-                                        >
-                                            {leg.PE?.closePrice?.toFixed(2) ?? "-"}
-                                        </td>
-
-                                        {/* Strike middle */}
-                                        <td
-                                            className={`p-1 border font-bold sticky left-0 bg-yellow-100 text-center select-none z-20 shadow-md`}
-                                            aria-label={`Strike Price: ${leg.strPrice}`}
-                                        >
-                                            {leg.strPrice}
-                                        </td>
-
-                                        {/* CE side */}
-                                        <td
-                                            className={`p-1 border font-mono text-right ${ceBg}`}
-                                            aria-label={`Call Option Premium: ${leg.CE?.closePrice?.toFixed(2) ?? "-"}`}
-                                        >
-                                            {leg.CE?.closePrice?.toFixed(2) ?? "-"}
-                                        </td>
-                                        <td className={`p-1 border font-mono relative`}>
-                                            <div
-                                                className={`absolute inset-y-0 left-0 rounded-r ${ceBarColor}`}
-                                                style={{ width: `${ceBarWidth}px` }}
-                                                aria-hidden="true"
-                                            />
-                                            <span className="relative z-10 text-right block select-none pl-1">
-                                                {ceDeltaOI !== 0 ? ceDeltaOI : "-"}
-                                            </span>
-                                            <div className="absolute right-1 top-0 text-xs font-semibold select-none text-green-700">
-                                                {ceLabel}
-                                            </div>
-                                        </td>
-                                        <td
-                                            className={`p-1 border text-right font-mono ${ceBg} border-r-0`}
-                                            aria-label={`Call Option Open Interest: ${leg.CE?.openInt ?? "-"}`}
-                                        >
-                                            {(leg.CE?.openInt ?? "-").toLocaleString()}
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-
-                    {/* Legend */}
-                    <div className="p-2 mt-1 text-xs text-gray-600 flex flex-wrap gap-6 select-none">
-                        <div className="flex items-center gap-1">
-                            <span className="w-4 h-4 bg-yellow-100 rounded border border-gray-300"></span>
-                            <span>ATM (At-The-Money)</span>
+                {/* Day Navigation */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+                    <div className="flex items-center justify-between">
+                        <button
+                            onClick={prevDay}
+                            disabled={selectedDateIndex === 0 || loading}
+                            className="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                            <span>Previous Day</span>
+                        </button>
+                        
+                        <div className="flex items-center space-x-3">
+                            <Calendar className="w-5 h-5 text-gray-600" />
+                            <div className="text-center">
+                                <div className="text-lg font-bold text-gray-900">
+                                    {selectedDate ? new Date(
+                                        parseInt(selectedDate.slice(4, 8)), 
+                                        parseInt(selectedDate.slice(2, 4)) - 1, 
+                                        parseInt(selectedDate.slice(0, 2))
+                                    ).toLocaleDateString('en-IN', { 
+                                        weekday: 'long', 
+                                        year: 'numeric', 
+                                        month: 'long', 
+                                        day: 'numeric' 
+                                    }) : 'N/A'}
+                                </div>
+                                {previousDate && (
+                                    <div className="text-sm text-gray-500">
+                                        Compared to {new Date(
+                                            parseInt(previousDate.slice(4, 8)), 
+                                            parseInt(previousDate.slice(2, 4)) - 1, 
+                                            parseInt(previousDate.slice(0, 2))
+                                        ).toLocaleDateString('en-IN')}
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                            <span className="w-4 h-4 bg-green-100 rounded border border-gray-300"></span>
-                            <span>ITM (In-The-Money)</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <span className="w-4 h-4 bg-gray-50 rounded border border-gray-300"></span>
-                            <span>OTM (Out-Of-The-Money)</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <span className="w-12 h-3 bg-green-300 rounded"></span>
-                            <span>Buildup (OI Increase)</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <span className="w-12 h-3 bg-red-300 rounded"></span>
-                            <span>Unwinding (OI Decrease)</span>
-                        </div>
+                        
+                        <button
+                            onClick={nextDay}
+                            disabled={selectedDateIndex >= filteredDates.length - 1 || filteredDates.length === 0 || loading}
+                            className="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+                        >
+                            <span>Next Day</span>
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
                     </div>
                 </div>
-            )}
+
+                {/* Option Metrics */}
+                <OptionMetrics optionChain={optionChain} />
+
+                {/* Loading and Error States */}
+                {loading && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
+                        <div className="flex flex-col items-center justify-center space-y-4">
+                            <LoadingSpinner size="lg" />
+                            <p className="text-gray-600 font-medium">Loading option chain data...</p>
+                        </div>
+                    </div>
+                )}
+                
+                {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                                <Info className="w-4 h-4 text-red-600" />
+                            </div>
+                            <div>
+                                <h3 className="text-red-800 font-semibold">Error Loading Data</h3>
+                                <p className="text-red-600">{error}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Option Chain Table */}
+                {optionChain && !loading && !error && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[1000px] border-collapse text-sm">
+                                <thead>
+                                    <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                                        {/* PE Headers */}
+                                        <th className="p-4 text-left font-semibold text-gray-700 border-r border-gray-200">
+                                            <div className="flex items-center space-x-2">
+                                                <TrendingDown className="w-4 h-4 text-red-500" />
+                                                <span>PE OI</span>
+                                            </div>
+                                        </th>
+                                        <th className="p-4 text-left font-semibold text-gray-700 border-r border-gray-200">
+                                            PE ΔOI
+                                        </th>
+                                        <th className="p-4 text-left font-semibold text-gray-700 border-r border-gray-200">
+                                            PE Premium
+                                        </th>
+
+                                        {/* Strike Header */}
+                                        <th className="p-4 text-center font-bold text-lg text-gray-900 bg-yellow-50 border-x-2 border-yellow-200 sticky left-0 z-10 shadow-sm">
+                                            <div className="flex items-center justify-center space-x-2">
+                                                <Target className="w-5 h-5 text-yellow-600" />
+                                                <span>Strike Price</span>
+                                            </div>
+                                        </th>
+
+                                        {/* CE Headers */}
+                                        <th className="p-4 text-left font-semibold text-gray-700 border-l border-gray-200">
+                                            CE Premium
+                                        </th>
+                                        <th className="p-4 text-left font-semibold text-gray-700 border-l border-gray-200">
+                                            CE ΔOI
+                                        </th>
+                                        <th className="p-4 text-left font-semibold text-gray-700 border-l border-gray-200">
+                                            <div className="flex items-center space-x-2">
+                                                <TrendingUp className="w-4 h-4 text-green-500" />
+                                                <span>CE OI</span>
+                                            </div>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {optionChain.strikes.map((leg: OptionChainLegWithDeltas, index) => {
+                                        const atm = atmStrike ?? 0;
+                                        const ceMoneyness = leg.CE ? getOptionMoneyness(leg.strPrice, atm, "CE") : null;
+                                        const peMoneyness = leg.PE ? getOptionMoneyness(leg.strPrice, atm, "PE") : null;
+
+                                        const ceBg = ceMoneyness ? moneynessBg[ceMoneyness] : "bg-gray-50";
+                                        const peBg = peMoneyness ? moneynessBg[peMoneyness] : "bg-gray-50";
+
+                                        const ceDeltaOI = leg.CE?.deltaOI ?? 0;
+                                        const peDeltaOI = leg.PE?.deltaOI ?? 0;
+                                        const maxDelta = maxOiDelta || 1;
+
+                                        const ceBarWidth = oiChangeBarWidth(ceDeltaOI, maxDelta);
+                                        const peBarWidth = oiChangeBarWidth(peDeltaOI, maxDelta);
+                                        const ceBarColor = oiChangeColor(ceDeltaOI);
+                                        const peBarColor = oiChangeColor(peDeltaOI);
+
+                                        return (
+                                            <tr
+                                                key={leg.strPrice}
+                                                className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                                                    index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
+                                                }`}
+                                            >
+                                                {/* PE Side */}
+                                                <td className={`p-3 font-mono text-right ${peBg} border-r border-gray-200`}>
+                                                    <span className="font-semibold">
+                                                        {leg.PE?.openInt ? leg.PE.openInt.toLocaleString() : "-"}
+                                                    </span>
+                                                </td>
+                                                <td className="p-3 font-mono relative border-r border-gray-200">
+                                                    <div
+                                                        className={`absolute inset-y-0 left-0 rounded-r ${peBarColor} opacity-30`}
+                                                        style={{ width: `${peBarWidth}px` }}
+                                                    />
+                                                    <div className="relative z-10 flex items-center justify-between">
+                                                        <span className={`font-semibold ${
+                                                            peDeltaOI > 0 ? 'text-green-600' : peDeltaOI < 0 ? 'text-red-600' : 'text-gray-500'
+                                                        }`}>
+                                                            {peDeltaOI !== 0 ? (peDeltaOI > 0 ? `+${peDeltaOI}` : peDeltaOI) : "-"}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className={`p-3 font-mono text-right ${peBg} border-r border-gray-200`}>
+                                                    <span className="font-semibold">
+                                                        {leg.PE?.closePrice ? `₹${leg.PE.closePrice.toFixed(2)}` : "-"}
+                                                    </span>
+                                                </td>
+
+                                                {/* Strike Price */}
+                                                <td className="p-3 text-center font-bold text-lg bg-yellow-50 border-x-2 border-yellow-200 sticky left-0 z-10 shadow-sm">
+                                                    <div className={`inline-flex items-center justify-center px-3 py-1 rounded-lg ${
+                                                        leg.strPrice === atm ? 'bg-yellow-200 text-yellow-800' : 'bg-gray-100 text-gray-700'
+                                                    }`}>
+                                                        {leg.strPrice}
+                                                    </div>
+                                                    {leg.strPrice === atm && (
+                                                        <div className="text-xs text-yellow-600 mt-1 font-medium">ATM</div>
+                                                    )}
+                                                </td>
+
+                                                {/* CE Side */}
+                                                <td className={`p-3 font-mono text-right ${ceBg} border-l border-gray-200`}>
+                                                    <span className="font-semibold">
+                                                        {leg.CE?.closePrice ? `₹${leg.CE.closePrice.toFixed(2)}` : "-"}
+                                                    </span>
+                                                </td>
+                                                <td className="p-3 font-mono relative border-l border-gray-200">
+                                                    <div
+                                                        className={`absolute inset-y-0 left-0 rounded-r ${ceBarColor} opacity-30`}
+                                                        style={{ width: `${ceBarWidth}px` }}
+                                                    />
+                                                    <div className="relative z-10 flex items-center justify-between">
+                                                        <span className={`font-semibold ${
+                                                            ceDeltaOI > 0 ? 'text-green-600' : ceDeltaOI < 0 ? 'text-red-600' : 'text-gray-500'
+                                                        }`}>
+                                                            {ceDeltaOI !== 0 ? (ceDeltaOI > 0 ? `+${ceDeltaOI}` : ceDeltaOI) : "-"}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className={`p-3 font-mono text-right ${ceBg} border-l border-gray-200`}>
+                                                    <span className="font-semibold">
+                                                        {leg.CE?.openInt ? leg.CE.openInt.toLocaleString() : "-"}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Legend */}
+                        <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                            <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600">
+                                <div className="flex items-center space-x-2">
+                                    <div className="w-4 h-4 bg-yellow-100 rounded border border-yellow-300"></div>
+                                    <span>ATM (At-The-Money)</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <div className="w-4 h-4 bg-green-100 rounded border border-green-300"></div>
+                                    <span>ITM (In-The-Money)</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <div className="w-4 h-4 bg-gray-100 rounded border border-gray-300"></div>
+                                    <span>OTM (Out-Of-The-Money)</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <div className="w-8 h-3 bg-green-300 rounded"></div>
+                                    <span>OI Buildup</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <div className="w-8 h-3 bg-red-300 rounded"></div>
+                                    <span>OI Unwinding</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
         </section>
     );
 };
